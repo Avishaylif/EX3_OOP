@@ -1,55 +1,153 @@
 package image_char_matching;
-
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class SubImgCharMatcher {
-    private HashMap<Character, Double> charset;
+    private char[] charSet;
+    private HashMap<Character, Double> rawVal;
+    private HashMap<Double, Set<Character>> normRawValByBrightness;
+    private HashMap<Character, Double> normRawValByChar;
+    private double minBrightness = Double.MAX_VALUE;
+    private double maxBrightness = Double.MIN_VALUE;
+
+
 
     public SubImgCharMatcher(char[] charset) {
-        this.charset = new HashMap<>();
-        for (char c : charset) {
-            this.charset.put(c, getBrightness(CharConverter.convertToBoolArray(c)));
+        this.charSet = charset;
+        this.rawVal = new HashMap<>();
+        this.normRawValByBrightness = new HashMap<>();
+        this.normRawValByChar = new HashMap<>();
+
+        for (char ch : this.charSet) {
+            brightnessVal(ch);
         }
-        // Normalize the brightness values
-        double max = this.charset.values().stream().max(Double::compare).get();
-        double min = this.charset.values().stream().min(Double::compare).get();
-        for (Map.Entry<Character, Double> entry : this.charset.entrySet()) {
-            entry.setValue((entry.getValue() - min) / (max - min));
-            System.out.println(entry.getKey() + " " + entry.getValue());
-        }
+
+        updateNorm();
+        updateNormSet();
     }
+
 
     public char getCharByImageBrightness(double brightness) {
-        double closestDifference = Double.MAX_VALUE;
-        char closestKey = ' ';
-
-        for (char key : charset.keySet()) {
-            double difference = Math.abs(charset.get(key) - brightness);
-
-            if (difference < closestDifference) {
-                closestDifference = difference;
-                closestKey = key;
+        char closestChar = charSet[0];
+        double minDifference = Double.MAX_VALUE;
+        for (Character ch : normRawValByChar.keySet()) {
+            double curDifference = Math.abs(brightness - normRawValByChar.get(ch));
+            if (curDifference < minDifference) {
+                minDifference = curDifference;
+                closestChar = ch;
             }
         }
-        return closestKey;
+        return closestChar;
+    }
+
+     public void addChar(char ch) {
+        if (!rawVal.containsKey(ch)) {
+            char[] newCharSet = new char[charSet.length + 1];
+            System.arraycopy(charSet, 0, newCharSet, 0, charSet.length);
+            newCharSet[charSet.length] = ch;
+            this.charSet = newCharSet;
+            Arrays.sort(charSet);
+            brightnessVal(ch);
+            updateNorm();
+            updateNormSet();
+        }
     }
 
 
-    public void addChar(char c){
-        charset.put(c, 0.0);
-    }
-    public void removeChar(char c){
-        charset.remove(c);
+    public void removeChar(char ch) {
+        if (rawVal.containsKey(ch)) {
+            char[] newCharSet = new char[charSet.length - 1];
+            int index = 0;
+            for (char value : charSet) {
+                if (value == ch) {
+                    continue;
+                }
+                newCharSet[index] = value;
+                index++;
+            }
+            this.charSet = newCharSet;
+
+            // Sort the charSet in natural (ASCII) order
+            Arrays.sort(charSet);
+
+            this.rawVal.remove(ch);
+            this.normRawValByChar.remove(ch);
+
+            updateNorm();
+            updateNormSet();
+        }
     }
 
-    private double getBrightness(boolean[][] img ) {
-        double sum = 0;
-        for (int y = 0; y < img.length; y++) {
-            for (int x = 0; x < img[y].length; x++) {
-                sum += img[y][x] ? 1 : 0;
+     private void updateNormSet() {
+        this.normRawValByBrightness = new HashMap<>();
+
+        for (char ch : charSet) {
+            double brightness = normRawValByChar.get(ch);
+            Set<Character> charSet = normRawValByBrightness.getOrDefault(brightness, new HashSet<>());
+            charSet.add(ch);
+            normRawValByBrightness.put(brightness, charSet);
+        }
+    }
+
+
+    private void brightnessVal(char ch) {
+        if (!this.rawVal.containsKey(ch)) {
+            boolean[][] boolArr = CharConverter.convertToBoolArray(ch);
+            double numWhite = 0;
+            for (boolean[] booleans : boolArr) {
+                for (int j = 0; j < boolArr[0].length; j++) {
+                    if (booleans[j]) {
+                        numWhite++;
+                    }
+                }
+            }
+            rawVal.put(ch, numWhite / (boolArr.length * boolArr[0].length));
+        }
+        normRawValByChar.put(ch, rawVal.get(ch));
+    }
+
+    private void updateMinMax() {
+        minBrightness = Double.MAX_VALUE;
+        maxBrightness = Double.MIN_VALUE;
+
+        for (double val : rawVal.values()) {
+            if (val < minBrightness) {
+                minBrightness = val;
+            }
+            if (val > maxBrightness) {
+                maxBrightness = val;
             }
         }
-        return sum / (img.length * img[0].length);
     }
+
+    private void updateNorm() {
+        updateMinMax();
+        for (char ch : charSet) {
+            double valBrightness = rawVal.get(ch);
+            double newVal = (valBrightness - minBrightness) / (maxBrightness - minBrightness);
+            normRawValByChar.put(ch, newVal);
+        }
+    updateNormSet();
+    }
+
+
+    public void printCharSet() {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < charSet.length; i++) {
+            result.append(charSet[i]);
+            if (i < charSet.length - 1) {
+                result.append(' ');
+            }
+        }
+        System.out.println(result);
+    }
+
+    /**
+     * Gets the size of the character set.
+     *
+     * @return Size of the character set.
+     */
+    public int getCharSetSize() {
+        return this.charSet.length;
+    }
+
 }

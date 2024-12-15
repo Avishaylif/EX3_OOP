@@ -1,61 +1,67 @@
 package image;
-
 import java.awt.*;
 
+/**to do:
+ * In this class there is pbulic method,check if is good.
+ */
+
 public class ProcessingImage {
-    private final Image image;
+    private Image image;
+    private Image[][] partImage;
 
     public ProcessingImage(Image image) {
+        this.image = image;
         if (image == null) {
             throw new IllegalArgumentException("Image cannot be null");
         }
-        this.image = image;
     }
 
 
-    public Image wrapImage(Image image) {
+    public Image wrapImage() {
         int width = image.getWidth();
         int height = image.getHeight();
-        int newWidth = 1;
-        int newHeight = 1;
-        while (newWidth < width) {
-            newWidth *= 2;
+        int newSize = 1;
+        while (newSize < Math.max(width, height)) {
+            newSize *= 2;
         }
-        while (newHeight < height) {
-            newHeight *= 2;
-        }
-        Color[][] newPixels = new Color[newHeight][newWidth];
-        for (int i = 0; i < newHeight; i++) {
-            for (int j = 0; j < newWidth; j++) {
-                if (i < height && j < width) {
-                    newPixels[i][j] = image.getPixel(i, j);
+        int paddingLeft = (newSize - width) / 2;
+        int paddingTop = (newSize - height) / 2;
+        Color[][] newPixels = new Color[newSize][newSize];
+        for (int i = 0; i < newSize; i++) {
+            for (int j = 0; j < newSize; j++) {
+                if (i >= paddingTop && i < paddingTop + height && j >= paddingLeft && j < paddingLeft + width) {
+                    newPixels[i][j] = image.getPixel(j - paddingLeft, i - paddingTop);
                 } else {
                     newPixels[i][j] = new Color(255, 255, 255);
                 }
             }
         }
-        return new Image(newPixels, newWidth, newHeight);
+        return new Image(newPixels, newSize, newSize);
     }
 
 
-    public Image[][] partImage(Image image, int resolution) {
-        int rows = image.getHeight();
-        int cols = image.getWidth();
-        int numSubImages = (rows / resolution) * (cols / resolution);
-        Image[][] result = new Image[numSubImages][numSubImages];
-        for (int i = 0; i < rows / resolution; i++) {
-            for (int j = 0; j < cols / resolution; j++) {
-                Color[][] subMatrix = new Color[resolution][resolution];
-                for (int k = 0; k < resolution; k++) {
-                    for (int l = 0; l < resolution; l++) {
-                        subMatrix[k][l] = image.getPixel(i * resolution + k, j * resolution + l);
+
+    public Image[][] subImages(int resolution) {
+        int size = image.getWidth() / resolution; // Size of each sub-image
+        int row = image.getHeight() / size;
+        int col = image.getWidth() / size;
+        this.partImage = new Image[row][col];
+        for (int k = 0; k < row; k++) {
+            for (int p = 0; p < col; p++) {
+                Color[][] sunIm = new Color[size][size];
+                for (int i = 0; i < size; i++) {
+                    for (int j = 0; j < size; j++) {
+                        int x = p * size + j;
+                        int y = k * size + i;
+                        sunIm[i][j] = image.getPixel(y, x);
                     }
                 }
-                result[i][j] = new Image(subMatrix, resolution, resolution);
+                this.partImage[k][p] = new Image(sunIm, size, size);
             }
         }
-        return result;
+        return this.partImage;
     }
+
 
     public double grayConvert(Image image) {
         if (image == null) {
@@ -64,16 +70,13 @@ public class ProcessingImage {
         int rows = image.getHeight();
         int cols = image.getWidth();
         double greyPixel = 0;
-
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 Color pixel = image.getPixel(i, j);
                 greyPixel += 0.2126 * pixel.getRed() + 0.7152 * pixel.getGreen() + 0.0722 * pixel.getBlue();
             }
         }
-
-        double averageBrightness = greyPixel / (rows * cols);
-        return averageBrightness;
+        return greyPixel / (rows * cols) / 255;
     }
 
 }

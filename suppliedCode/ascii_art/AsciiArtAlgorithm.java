@@ -21,13 +21,13 @@ public class AsciiArtAlgorithm {
     }
     public char[][] run() {
         ProcessingImage processingImage = new ProcessingImage(image);
-        Image wrappedImage = processingImage.wrapImage(image);
-        Image[][] subImages = processingImage.partImage(wrappedImage, resolution);
+        processingImage.wrapImage();
+        Image[][] subImages = processingImage.subImages(resolution);
         SubImgCharMatcher subImgCharMatcher = new SubImgCharMatcher(charset);
-        char[][] result = new char[resolution][resolution];
-        for (int i = 0; i < resolution; i++) {
-            for (int j = 0; j < resolution; j++) {
-                if (subImages[i][j] != null) {
+        char[][] result = new char[subImages.length][subImages[0].length];
+        for (int i = 0; i < subImages.length; i++) {
+            for (int j = 0; j < subImages[0].length; j++) {
+                if (subImages[i] != null) {
                     double grey = processingImage.grayConvert(subImages[i][j]);
                     result[i][j] = subImgCharMatcher.getCharByImageBrightness(grey);
                 }
@@ -45,4 +45,5 @@ public class AsciiArtAlgorithm {
         }
     }
 
+// tell me you see last updated at 2024-15-12 16:43
 
