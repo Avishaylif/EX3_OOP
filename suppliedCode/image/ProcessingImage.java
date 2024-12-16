@@ -26,16 +26,25 @@ public class ProcessingImage {
         }
         int paddingLeft = (newSize - width) / 2;
         int paddingTop = (newSize - height) / 2;
+        System.out.println("width: " + width);
+        System.out.println("height: " + height);
+        System.out.println("newSize: " + newSize);
+        System.out.println("paddingLeft: " + paddingLeft);
+        System.out.println("paddingTop: " + paddingTop);
+
         Color[][] newPixels = new Color[newSize][newSize];
         for (int i = 0; i < newSize; i++) {
             for (int j = 0; j < newSize; j++) {
-                if (i >= paddingTop && i < paddingTop + height && j >= paddingLeft && j < paddingLeft + width) {
-                    newPixels[i][j] = image.getPixel(j - paddingLeft, i - paddingTop);
-                } else {
-                    newPixels[i][j] = new Color(255, 255, 255);
-                }
+                int origX = j - paddingLeft;
+                int origY = i - paddingTop;
+//                if (origX >= 0 && origX < width && origY >= 0 && origY < height) {
+//                    newPixels[i][j] = image.getPixel(origX, origY);
+//                } else {
+//                    newPixels[i][j] = new Color(255, 255, 255);
+//                }
             }
         }
+
         return new Image(newPixels, newSize, newSize);
     }
 
