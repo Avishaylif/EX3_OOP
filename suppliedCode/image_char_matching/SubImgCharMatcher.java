@@ -2,91 +2,120 @@ package image_char_matching;
 import java.util.*;
 
 public class SubImgCharMatcher {
-    private char[] charSet;
+    private TreeSet<Character> charSet;
     private HashMap<Character, Double> rawVal;
-    private HashMap<Double, Set<Character>> normRawValByBrightness;
+
     private HashMap<Character, Double> normRawValByChar;
     private double minBrightness = Double.MAX_VALUE;
     private double maxBrightness = Double.MIN_VALUE;
+    private String roundingMethod = "abs"; // Default rounding method
+    private TreeMap<Double, Character> brightnessMap;
 
+    private void updateBrightnessMap() {
+        brightnessMap = new TreeMap<>();
+        for (char ch : charSet) {
+            double brightness = normRawValByChar.get(ch);
+            // Use compute to handle existing entries and keep the char with lowest ASCII
+            brightnessMap.compute(brightness, (k, existingChar) -> {
+                if (existingChar == null || ch < existingChar) {
+                    return ch; // Keep the new char if it's the first or has a lower ASCII
+                } else {
+                    return existingChar; // Keep the existing char if it has a lower or equal ASCII
+                }
+            });
+        }
+    }
 
 
     public SubImgCharMatcher(char[] charset) {
-        this.charSet = charset;
+        this.charSet = new TreeSet<>();
         this.rawVal = new HashMap<>();
-        this.normRawValByBrightness = new HashMap<>();
+
         this.normRawValByChar = new HashMap<>();
+
+        for (char ch : charset) {
+            addChar(ch); // Use addChar to ensure proper setup
+        }
 
         for (char ch : this.charSet) {
             brightnessVal(ch);
         }
-
         updateNorm();
-        updateNormSet();
+
     }
+
+
 
 
     public char getCharByImageBrightness(double brightness) {
-        char closestChar = charSet[0];
+        if (charSet.isEmpty()) {
+            throw new IllegalStateException("Character set is empty. Cannot determine closest character.");
+        }
+
+        return switch (roundingMethod) {
+            case "up" -> findCharRoundingUp(brightness);
+            case "down" -> findCharRoundingDown(brightness);
+            default -> findCharRoundingAbsolute(brightness);
+        };
+    }
+
+    private char findCharRoundingUp(double brightness) {
+        Double ceilingKey = brightnessMap.ceilingKey(brightness);
+        if (ceilingKey != null) {
+            return brightnessMap.get(ceilingKey);
+        }
+
+        return brightnessMap.get(brightnessMap.lastKey());
+    }
+
+    private char findCharRoundingDown(double brightness) {
+        Double floorKey = brightnessMap.floorKey(brightness);
+        if (floorKey != null) {
+            return brightnessMap.get(floorKey);
+        }
+
+
+        return brightnessMap.get(brightnessMap.firstKey());
+    }
+
+    private char findCharRoundingAbsolute(double brightness) {
         double minDifference = Double.MAX_VALUE;
-        for (Character ch : normRawValByChar.keySet()) {
-            double curDifference = Math.abs(brightness - normRawValByChar.get(ch));
-            if (curDifference < minDifference) {
-                minDifference = curDifference;
-                closestChar = ch;
+        char closestChar = brightnessMap.firstEntry().getValue();
+
+        for (Map.Entry<Double, Character> entry : brightnessMap.entrySet()) {
+            double difference = Math.abs(entry.getKey() - brightness);
+            if (difference < minDifference) {
+                minDifference = difference;
+                closestChar = entry.getValue();
             }
         }
+
         return closestChar;
     }
 
-     public void addChar(char ch) {
-        if (!rawVal.containsKey(ch)) {
-            char[] newCharSet = new char[charSet.length + 1];
-            System.arraycopy(charSet, 0, newCharSet, 0, charSet.length);
-            newCharSet[charSet.length] = ch;
-            this.charSet = newCharSet;
-            Arrays.sort(charSet);
+    public void addChar(char ch) {
+        if (!charSet.contains(ch)) {
+            charSet.add(ch);
             brightnessVal(ch);
             updateNorm();
-            updateNormSet();
         }
     }
 
+    public int getCharsetSize(){
+        return charSet.size();
+    }
 
     public void removeChar(char ch) {
-        if (rawVal.containsKey(ch)) {
-            char[] newCharSet = new char[charSet.length - 1];
-            int index = 0;
-            for (char value : charSet) {
-                if (value == ch) {
-                    continue;
-                }
-                newCharSet[index] = value;
-                index++;
-            }
-            this.charSet = newCharSet;
-
-            // Sort the charSet in natural (ASCII) order
-            Arrays.sort(charSet);
-
-            this.rawVal.remove(ch);
-            this.normRawValByChar.remove(ch);
-
+        if (charSet.contains(ch)) {
+            charSet.remove(ch);
+            rawVal.remove(ch);
+            normRawValByChar.remove(ch);
             updateNorm();
-            updateNormSet();
         }
     }
 
-     private void updateNormSet() {
-        this.normRawValByBrightness = new HashMap<>();
 
-        for (char ch : charSet) {
-            double brightness = normRawValByChar.get(ch);
-            Set<Character> charSet = normRawValByBrightness.getOrDefault(brightness, new HashSet<>());
-            charSet.add(ch);
-            normRawValByBrightness.put(brightness, charSet);
-        }
-    }
+
 
 
     private void brightnessVal(char ch) {
@@ -119,6 +148,31 @@ public class SubImgCharMatcher {
         }
     }
 
+
+
+    public void printCharSet() {
+        if (charSet.isEmpty()){
+            return;
+        }
+        for (char ch : charSet) {
+            System.out.print(ch + " ");
+        }
+        System.out.println();
+    }
+
+    public void clear() {
+        charSet.clear();
+    }
+
+    public void setRoundingMethod(String method) {
+        if (method.equals("up") || method.equals("down") || method.equals("abs")) {
+            this.roundingMethod = method;
+        } else {
+            throw new IllegalArgumentException("Invalid rounding method.");
+        }
+    }
+
+    //Call updateBrightnessMap() in updateNorm()
     private void updateNorm() {
         updateMinMax();
         for (char ch : charSet) {
@@ -126,28 +180,9 @@ public class SubImgCharMatcher {
             double newVal = (valBrightness - minBrightness) / (maxBrightness - minBrightness);
             normRawValByChar.put(ch, newVal);
         }
-    updateNormSet();
+
+        updateBrightnessMap();
     }
 
-
-    public void printCharSet() {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < charSet.length; i++) {
-            result.append(charSet[i]);
-            if (i < charSet.length - 1) {
-                result.append(' ');
-            }
-        }
-        System.out.println(result);
-    }
-
-    /**
-     * Gets the size of the character set.
-     *
-     * @return Size of the character set.
-     */
-    public int getCharSetSize() {
-        return this.charSet.length;
-    }
 
 }
