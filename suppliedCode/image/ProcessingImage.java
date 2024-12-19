@@ -9,7 +9,11 @@ public class ProcessingImage {
     public static final int MINIMUM_RESOLUTION = 1;
     private Image image;
     private Image[][] partImage;
+    private double[][] cachedBrightness;
     private int resolution;
+
+    private boolean cacheValid = false;
+
 
 
 
@@ -26,7 +30,8 @@ public class ProcessingImage {
         int minCharsInRow = Math.max(MINIMUM_RESOLUTION, image.getWidth() / image.getHeight());
         if (newResolution >= minCharsInRow && newResolution <= image.getWidth()) {
             this.resolution = newResolution;
-        } else {
+            cacheValid = false;
+        } else {//TODO: check if to delete
             throw new IllegalArgumentException("Resolution exceeds boundaries.");
         }
     }
@@ -82,23 +87,30 @@ public class ProcessingImage {
 
 
     public Image[][] subImages() {
-        int size = image.getWidth() / resolution; // Size of each sub-image
-        int row = image.getHeight() / size;
-        int col = image.getWidth() / size;
-        this.partImage = new Image[row][col];
-        for (int k = 0; k < row; k++) {
-            for (int p = 0; p < col; p++) {
-                Color[][] sunIm = new Color[size][size];
-                for (int i = 0; i < size; i++) {
-                    for (int j = 0; j < size; j++) {
-                        int x = p * size + j;
-                        int y = k * size + i;
-                        sunIm[i][j] = image.getPixel(y, x);
-                    }
-                }
-                this.partImage[k][p] = new Image(sunIm, size, size);
-            }
+        if (cacheValid) {
+            return this.partImage;
         }
+            int size = image.getWidth() / resolution; // Size of each sub-image
+            int row = image.getHeight() / size;
+            int col = image.getWidth() / size;
+            this.partImage = new Image[row][col];
+            this.cachedBrightness = new double[row][col];
+            for (int k = 0; k < row; k++) {
+                for (int p = 0; p < col; p++) {
+                    Color[][] sunIm = new Color[size][size];
+                    for (int i = 0; i < size; i++) {
+                        for (int j = 0; j < size; j++) {
+                            int x = p * size + j;
+                            int y = k * size + i;
+                            sunIm[i][j] = image.getPixel(y, x);
+                        }
+                    }
+                    this.partImage[k][p] = new Image(sunIm, size, size);
+                    this.cachedBrightness[row][col] = grayConvert(this.partImage[row][col]); // מחשב ערכי בהירות
+
+                }
+            }
+        cacheValid = true;
         return this.partImage;
     }
 
