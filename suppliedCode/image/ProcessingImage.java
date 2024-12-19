@@ -106,7 +106,7 @@ public class ProcessingImage {
                         }
                     }
                     this.partImage[k][p] = new Image(sunIm, size, size);
-                    this.cachedBrightness[row][col] = grayConvert(this.partImage[row][col]); // מחשב ערכי בהירות
+                    this.cachedBrightness[k][p] = grayConvert(this.partImage[k][p]); // מחשב ערכי בהירות
 
                 }
             }
