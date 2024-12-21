@@ -22,6 +22,9 @@ public class HtmlAsciiOutput implements AsciiOutput {
     }
 
     @Override
+    /**
+     * Output the specified 2D array of chars to an HTML file.
+     */
     public void out(char[][] chars) {
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
             writer.write(String.format(

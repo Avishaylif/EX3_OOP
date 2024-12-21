@@ -21,6 +21,9 @@ public class Shell {
 
     //default values
     private static final int defaultResolution = 2; //TODO: put it inside the processingImage class
+    private static final int THREE = 3;
+    private static final int MIN_ASCII = 32;
+    private static final int MAX_ASCII = 126;
     private static final String defaultRoondingMethod = "";
     private static final String defaultOutput = "";
     public static final char[] DEFAULT_CHARS_SET = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
@@ -206,7 +209,7 @@ public class Shell {
                 return;
 
             default:
-                if (param.length() == 3 && param.charAt(1) == '-') {
+                if (param.length() == THREE && param.charAt(1) == '-') {
                     addRange(param.charAt(0), param.charAt(2));
                 } else if (param.length() == 1) {
                     addSingleChar(param.charAt(0));
@@ -237,7 +240,7 @@ public class Shell {
                 return;
 
             default:
-                if (param.length() == 3 && param.charAt(1) == '-') {
+                if (param.length() == THREE && param.charAt(1) == '-') {
                     removeRange(param.charAt(0), param.charAt(2));
                 } else if (param.length() == 1) {
                     removeSingleChar(param.charAt(0));
@@ -262,7 +265,7 @@ public class Shell {
             start = end;
             end = temp;
         }
-        if (start < 32 || end > 126) {
+        if (start < MIN_ASCII || end > MAX_ASCII) {
             throw new IOException(ADD_ERROR_MESSAGE);
         }
 
@@ -284,7 +287,7 @@ public class Shell {
             start = end;
             end = temp;
         }
-        if (start < 32 || end > 126) {
+        if (start < MIN_ASCII || end > MAX_ASCII) {
             throw new IOException(REMOVE_ERROR_MESSAGE);
         }
 
@@ -299,7 +302,7 @@ public class Shell {
      * @throws IOException If the character is out of ASCII bounds.
      */
     private void addSingleChar(char c) throws IOException{
-        if (c < 32 || c > 126) {
+        if (c < MIN_ASCII || c > MAX_ASCII) {
             throw new IOException(ADD_ERROR_MESSAGE);
 
         }
@@ -312,7 +315,7 @@ public class Shell {
      * @throws IOException If the character is out of ASCII bounds.
      */
     private void removeSingleChar(char c) throws IOException {
-        if (c < 32 || c > 126) {
+        if (c < MIN_ASCII || c > MAX_ASCII) {
             throw new IOException(REMOVE_ERROR_MESSAGE);
         }
         subImgCharMatcher.removeChar(c);

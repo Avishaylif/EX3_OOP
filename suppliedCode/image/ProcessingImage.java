@@ -11,12 +11,21 @@ public class ProcessingImage {
     private Image[][] partImage;
     private double[][] cachedBrightness;
     private int resolution;
-
+    //constants
+    private static final int defaultResolution = 2;
+    private static final int WHITEVAL = 255;
+    private static final double GREEN = 0.7152;
+    private static final double BLUE = 0.0722;
+    private static final double RED = 0.2126;
     private boolean cacheValid = false;
+    private static final Color WHITE = new Color(255, 255, 255);
 
 
-
-
+    /**
+     * Constructor for ProcessingImage.
+     * @param image The image to be processed.
+     * @param resolution The resolution of the image.
+     */
     public ProcessingImage(Image image, int resolution) {
 
         if (image == null) {
@@ -26,6 +35,10 @@ public class ProcessingImage {
         setResolution(resolution);
     }
 
+    /**
+     * Sets the resolution of the image.
+     * @param newResolution The new resolution of the image.
+     */
     public void setResolution(int newResolution) {
         int minCharsInRow = Math.max(MINIMUM_RESOLUTION, image.getWidth() / image.getHeight());
         if (newResolution >= minCharsInRow && newResolution <= image.getWidth()) {
@@ -35,30 +48,37 @@ public class ProcessingImage {
             throw new IllegalArgumentException("Resolution exceeds boundaries.");
         }
     }
-
+    /**
+     * Returns the resolution of the image.
+     * @return The resolution of the image.
+     */
     public int getResolution() {
         return resolution;
     }
 
-
+    /**
+     * Wraps the image with white pixels to make it a square.
+     * @param image The image to be wrapped.
+     * @return The wrapped image.
+     */
     private Image wrapImage(Image image) {
         int width = image.getWidth();
         int height = image.getHeight();
-
-        // Find the closest power of 2 greater than or equal to the current width
         int newWidth = 1;
-        while (newWidth < width) {
-            newWidth *= 2;
-        }
-
-        // Find the closest power of 2 greater than or equal to the current height
         int newHeight = 1;
-        while (newHeight < height) {
-            newHeight *= 2;
+
+        // Calculate the smallest power of 2 that is greater than the width and height
+        while (newWidth < width || newHeight < height) {
+            if (newWidth < width) {
+                newWidth *= 2;
+            }
+            if (newHeight < height) {
+                newHeight *= 2;
+            }
         }
 
         // Calculate symmetric padding for width and height
-        int paddingLeft = (newWidth - width) / 2;
+        int horPadding = (newWidth - width) / 2;
         int paddingTop = (newHeight - height) / 2;
 
         // Create a new pixel matrix for the wrapped image
@@ -66,26 +86,26 @@ public class ProcessingImage {
 
         for (int i = 0; i < newHeight; i++) {
             for (int j = 0; j < newWidth; j++) {
-                int origX = j - paddingLeft; // Adjust X for left padding
-                int origY = i - paddingTop;  // Adjust Y for top padding
+                int firstX = j - horPadding; // Adjust X for horizontal padding
+                int firstY = i - paddingTop;  // Adjust Y for vertical padding
 
-                if (origX >= 0 && origX < width && origY >= 0 && origY < height) {
-                    // Copy original pixel to the new position
-                    newPixels[i][j] = image.getPixel(origY, origX);
+                if (firstX >= 0 && firstX < width && firstY >= 0 && firstY < height) {
+                    newPixels[i][j] = image.getPixel(firstY, firstX);
                 } else {
                     // Fill padding with white pixels
-                    newPixels[i][j] = new Color(255, 255, 255);
+                    newPixels[i][j] = WHITE;
                 }
             }
         }
-
-        // Return the new image with updated dimensions
         return new Image(newPixels, newWidth, newHeight);
     }
 
 
 
-
+    /**
+     * Returns the sub-images of the image.
+     * @return The sub-images of the image.
+     */
     public Image[][] subImages() {
         if (cacheValid) {
             return this.partImage;
@@ -106,7 +126,7 @@ public class ProcessingImage {
                         }
                     }
                     this.partImage[k][p] = new Image(sunIm, size, size);
-                    this.cachedBrightness[k][p] = grayConvert(this.partImage[k][p]); // מחשב ערכי בהירות
+                    this.cachedBrightness[k][p] = grayConvert(this.partImage[k][p]);
 
                 }
             }
@@ -114,7 +134,11 @@ public class ProcessingImage {
         return this.partImage;
     }
 
-
+    /**
+     * Converts the image to grayscale.
+     * @param image The image to be converted.
+     * @return The grayscale value of the image.
+     */
     public double grayConvert(Image image) {
         if (image == null) {
             throw new IllegalArgumentException("Image cannot be null");
@@ -125,10 +149,10 @@ public class ProcessingImage {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 Color pixel = image.getPixel(i, j);
-                greyPixel += 0.2126 * pixel.getRed() + 0.7152 * pixel.getGreen() + 0.0722 * pixel.getBlue();
+                greyPixel += RED * pixel.getRed() + GREEN * pixel.getGreen() + BLUE * pixel.getBlue();
             }
         }
-        double result = greyPixel / (rows * cols) / 255;
+        double result = greyPixel / (rows * cols) / WHITEVAL;
         return result;
     }
 
