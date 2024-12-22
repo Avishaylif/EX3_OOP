@@ -7,54 +7,85 @@ import ascii_output.*;
 
 import java.io.IOException;
 import AsciiArt_Exceptions.*;
-
+/**
+ * Shell class providing a command-line interface for ASCII art generation.
+ * Supports multiple commands to configure and execute the ASCII art algorithm.
+ */
 public class Shell {
-
+    /* Class constants: */
+    // Commands
+    /** Command string for exiting the program. */
     private static final String EXIT_COMMAND = "exit";
+    /** Command string for displaying the current character set. */
     private static final String DISPLAY_CHARS_COMMAND = "chars";
+    /** Command string for adding characters to the character set. */
     private static final String ADD_CHARACTER_COMMAND = "add";
+    /** Command string for removing characters from the character set. */
     private static final String REMOVE_CHARACTER_COMMAND = "remove";
+    /** Command string for adjusting the resolution of the ASCII art. */
     private static final String ADJUST_RESOLUTION_COMMAND = "res";
+    /** Command string for switching the output method (console or HTML). */
     private static final String SWITCH_OUTPUT_COMMAND = "output";
+    /** Command string for changing the rounding method used for brightness matching. */
     private static final String CHANGE_ROUNDING_COMMAND = "round";
+    /** Command string for running the ASCII art generation algorithm. */
     private static final String RUN_ASCIIART_COMMAND = "asciiArt";
 
     //default values
-    private static final String defaultRoondingMethod = "";
-    private static final String defaultOutput = "";
+    /** Numeric constant representing the number three, used for range validation. */
+    private static final int THREE = 3;
+    /** The minimum ASCII value for valid characters. */
+    private static final int MIN_ASCII = 32;
+    /** The maximum ASCII value for valid characters. */
+    private static final int MAX_ASCII = 126;
+    /** Default set of characters used for ASCII art generation. */
     public static final char[] DEFAULT_CHARS_SET = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    /** Default resolution value for the ASCII art generation. */
     public static final int DEFAULT_RESOLUTION = 2;
+    /** The string displayed to the user to prompt for input. */
     public static final String INPUT_STRING = ">>> ";
-    public static final String OUTPUT_MESSAGE = "Output method set to ";
+    /** The message displayed when the resolution is successfully set. */
     public static final String RESOLUTION_SET_MESSAGE = "Resolution set to ";
+    /** The default file name for saving HTML output. */
     public static final String OUT_FILE_NAME = "out.html";
+    /** The font name used for generating ASCII art output. */
     public static final String FONT_NAME = "Courier New";
+    /** Error message displayed when a character addition fails due to incorrect format. */
     public static final String ADD_ERROR_MESSAGE = "Did not add due to incorrect format.";
+    /** Error message displayed when a character removal fails due to incorrect format. */
     public static final String REMOVE_ERROR_MESSAGE = "Did not remove due to incorrect format.";
-    public static final String RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE = "Did not change resolution due" +
-            " to incorrect format.";
-    public static final String RESOLUTION_BOUNDRIES_ERROR_MESSAGE = "Did not change resolution due" +
-            " to exceeding boundaries.";
+    /** Error message displayed when the resolution command format is incorrect. */
+    public static final String RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE = "Did not change resolution" +
+            " due to incorrect format.";
+    /** Error message displayed when the resolution is outside valid boundaries. */
+    public static final String RESOLUTION_BOUNDRIES_ERROR_MESSAGE = "Did not change resolution" +
+            " due to exceeding boundaries.";
+    /** Error message displayed when the character set is too small to generate ASCII art. */
     public static final String CHARSET_SIZE_ERROR_MESSAGE = "Did not execute. Charset is too small.";
-    public static final String INVALID_ROUNDING_FORMAT_MESSAGE = "Did not change rounding method due to incorrect format.";
-    public static final String INVALID_FORMAT_OUTPUT_MESSAGE = "Did not change output method due to incorrect format.";
+    /** Error message displayed when the rounding method format is incorrect. */
+    public static final String INVALID_ROUNDING_FORMAT_MESSAGE = "Did not change rounding method" +
+            " due to incorrect format.";
+    /** Error message displayed when the output method format is incorrect. */
+    public static final String INVALID_FORMAT_OUTPUT_MESSAGE = "Did not change output method" +
+            " due to incorrect format.";
+    /** Error message displayed when an unrecognized command is entered. */
     public static final String INVALID_COMMAND_MESSAGE = "Did not execute due to incorrect command.";
 
 
+    /* Class fields: */
     private ProcessingImage processingImage;
     private SubImgCharMatcher subImgCharMatcher;
     private String outputMethod = "console"; // Default output method
 
-
+    /**
+     * Main method for running the shell interface.
+     *
+     * @param args Command-line arguments. The first argument should be the image file path.
+     */
     public static void main(String[] args) {
-
-        if (args.length == 0) {//check if input exist
-            System.out.println("Error: No image name provided.");//TODO: check if needed
-            return;
-        }
         String imageName = args[0];
         Shell shell = new Shell(imageName);
-        shell.run();
+        shell.run(imageName);
 
     }
 
@@ -76,12 +107,11 @@ public class Shell {
         this.subImgCharMatcher = new SubImgCharMatcher(charsSet);
     }
 
+
     /**
-     * Runs the shell interface, accepting and executing user commands in a loop until
-     * the "exit" command is entered.
-     *
+     * Runs the shell interface, processing commands entered by the user.
      */
-    public void run() {
+    public void run(String imageName) {//todo: handle this
         boolean notExitCommand = true;
         while(notExitCommand){
             System.out.print(INPUT_STRING);
@@ -91,24 +121,28 @@ public class Shell {
             try {
                 notExitCommand = commandsFactory(command, parts);
             }
-            catch (IOException | CharsetIsEmptyException | InvalidFormatException e){
+            catch (IOException | CharsetIsEmptyException | InvalidCommandFormatException |
+                   InvalidResolutionException e){
                 System.out.println(e.getMessage());
             }
         }
     }
 
     /**
-     * Parses and executes the user command.
+     * Processes and executes commands based on user input.
      *
      * @param command The main command string.
      * @param parts   The command and its arguments.
      * @return False if the command is "exit", true otherwise.
      * @throws IOException               If an I/O error occurs.
-     * @throws CharsetIsEmptyException   If the character set is empty when required.
-     * @throws InvalidFormatException If the resolution is invalid.\\todo:update or change
+     * @throws CharsetIsEmptyException   If the character set is empty.
+     * @throws InvalidCommandFormatException If the command format is invalid.
+     * @throws InvalidResolutionException if the desired resolution is oot of boundaries.
      */
-    private boolean commandsFactory(String command, String[] parts) throws IOException, InvalidFormatException,
-            CharsetIsEmptyException{
+    private boolean commandsFactory(String command, String[] parts) throws IOException,
+            InvalidCommandFormatException,
+            CharsetIsEmptyException,
+            InvalidResolutionException{
         try {
             switch (command) {
                 case EXIT_COMMAND:
@@ -138,12 +172,15 @@ public class Shell {
                     System.out.println(INVALID_COMMAND_MESSAGE);
             }
         }
-        catch(InvalidFormatException e){
-            throw new InvalidFormatException(e.getMessage());
+        catch(InvalidCommandFormatException e){
+            throw new InvalidCommandFormatException(e.getMessage());
             }
         catch (CharsetIsEmptyException e){
             throw new CharsetIsEmptyException(e.getMessage());
             }
+        catch (InvalidResolutionException e){
+            throw new InvalidResolutionException(e.getMessage());
+        }
         catch (IOException e){
             throw new IOException(e.getMessage());
         }
@@ -154,9 +191,9 @@ public class Shell {
      * Switches the output method for the ASCII art.
      *
      * @param parts The command and its arguments. Expected values: "console" or "html".
-     * @throws InvalidFormatException if the output is not "html" or "console".
+     * @throws InvalidCommandFormatException if the command's format is not good.
      */
-    private void switchOutput(String[] parts) throws InvalidFormatException{
+    private void switchOutput(String[] parts) throws InvalidCommandFormatException {
         if (parts.length > 1) {
             String method = parts[1];
             if (method.equals("console") || method.equals("html")) {
@@ -164,25 +201,25 @@ public class Shell {
                 return;
             }
         }
-        throw new InvalidFormatException(INVALID_FORMAT_OUTPUT_MESSAGE);
+        throw new InvalidCommandFormatException(INVALID_FORMAT_OUTPUT_MESSAGE);
 
     }
     /**
      * Changes the rounding method used for matching brightness to characters.
      *
      * @param parts The command and its arguments. Expected values: "up", "down", or "abs".
-     * @throws InvalidFormatException if rounding format is incorrect
+     * @throws InvalidCommandFormatException if the command's format is not good.
      */
-    private void changeRoundingMethod(String[] parts) throws InvalidFormatException{
+    private void changeRoundingMethod(String[] parts) throws InvalidCommandFormatException {
         if (parts.length < 2) {
-            throw new InvalidFormatException(INVALID_ROUNDING_FORMAT_MESSAGE);
+            throw new InvalidCommandFormatException(INVALID_ROUNDING_FORMAT_MESSAGE);
 
         }
         String method = parts[1];
         try {
             subImgCharMatcher.setRoundingMethod(method);
-        } catch (IllegalArgumentException e) {//TODO: check it uot
-            throw new InvalidFormatException(INVALID_ROUNDING_FORMAT_MESSAGE);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidCommandFormatException(INVALID_ROUNDING_FORMAT_MESSAGE);
         }
     }
 
@@ -213,7 +250,7 @@ public class Shell {
                 return;
 
             default:
-                if (param.length() == 3 && param.charAt(1) == '-') {
+                if (param.length() == THREE && param.charAt(1) == '-') {
                     addRange(param.charAt(0), param.charAt(2));
                 } else if (param.length() == 1) {
                     addSingleChar(param.charAt(0));
@@ -244,7 +281,7 @@ public class Shell {
                 return;
 
             default:
-                if (param.length() == 3 && param.charAt(1) == '-') {
+                if (param.length() == THREE && param.charAt(1) == '-') {
                     removeRange(param.charAt(0), param.charAt(2));
                 } else if (param.length() == 1) {
                     removeSingleChar(param.charAt(0));
@@ -269,7 +306,7 @@ public class Shell {
             start = end;
             end = temp;
         }
-        if (start < 32 || end > 126) {
+        if (start < MIN_ASCII || end > MAX_ASCII) {
             throw new IOException(ADD_ERROR_MESSAGE);
         }
 
@@ -291,7 +328,7 @@ public class Shell {
             start = end;
             end = temp;
         }
-        if (start < 32 || end > 126) {
+        if (start < MIN_ASCII || end > MAX_ASCII) {
             throw new IOException(REMOVE_ERROR_MESSAGE);
         }
 
@@ -306,7 +343,7 @@ public class Shell {
      * @throws IOException If the character is out of ASCII bounds.
      */
     private void addSingleChar(char c) throws IOException{
-        if (c < 32 || c > 126) {
+        if (c < MIN_ASCII || c > MAX_ASCII) {
             throw new IOException(ADD_ERROR_MESSAGE);
 
         }
@@ -319,7 +356,7 @@ public class Shell {
      * @throws IOException If the character is out of ASCII bounds.
      */
     private void removeSingleChar(char c) throws IOException {
-        if (c < 32 || c > 126) {
+        if (c < MIN_ASCII || c > MAX_ASCII) {
             throw new IOException(REMOVE_ERROR_MESSAGE);
         }
         subImgCharMatcher.removeChar(c);
@@ -329,9 +366,11 @@ public class Shell {
      * Adjusts the resolution for generating ASCII art.
      *
      * @param parts The command and its arguments. Expected values: "up" or "down".
-     * @throws InvalidFormatException If the resolution is out of valid bounds.
+     * @throws InvalidResolutionException If the resolution is out of valid bounds.
+     * @throws InvalidCommandFormatException if the command's format is not good.
      */
-    private void adjustResolution(String[] parts) throws InvalidFormatException {
+    private void adjustResolution(String[] parts) throws InvalidResolutionException,
+            InvalidCommandFormatException {
         try {
             if (parts.length > 1) {
                 String direction = parts[1];
@@ -340,12 +379,12 @@ public class Shell {
                 } else if (direction.equals("down")) {
                     processingImage.setResolution(processingImage.getResolution() / 2);
                 } else {
-                    throw new InvalidFormatException(RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE);
+                    throw new InvalidCommandFormatException(RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE);
                 }
             }
             System.out.println(RESOLUTION_SET_MESSAGE + processingImage.getResolution() + ".");
         } catch (IllegalArgumentException e) {
-            throw new InvalidFormatException(RESOLUTION_BOUNDRIES_ERROR_MESSAGE);
+            throw new InvalidResolutionException(RESOLUTION_BOUNDRIES_ERROR_MESSAGE);
         }
     }
     /**

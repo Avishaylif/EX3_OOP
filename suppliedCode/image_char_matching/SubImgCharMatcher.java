@@ -1,6 +1,9 @@
 package image_char_matching;
 import java.util.*;
-
+/**
+ * A utility class for matching sub-images to ASCII characters based on brightness values.
+ * Maintains a character set and associates each character with a normalized brightness value.
+ */
 public class SubImgCharMatcher {
     private TreeSet<Character> charSet;
     private HashMap<Character, Double> rawVal;
@@ -25,8 +28,10 @@ public class SubImgCharMatcher {
             });
         }
     }
-
-
+    /**
+     * Constructor for SubImgCharMatcher
+     * @param charset The character set to be used
+     */
     public SubImgCharMatcher(char[] charset) {
         this.charSet = new TreeSet<>();
         this.rawVal = new HashMap<>();
@@ -45,13 +50,13 @@ public class SubImgCharMatcher {
     }
 
 
-
-
+    /**
+     * Returns the character that best matches the given brightness value.
+     *
+     * @param brightness The brightness value to match.
+     * @return The character that best represents the given brightness.
+     */
     public char getCharByImageBrightness(double brightness) {
-        if (charSet.isEmpty()) {
-            throw new IllegalStateException("Character set is empty. Cannot determine closest character.");
-        }
-
         return switch (roundingMethod) {
             case "up" -> findCharRoundingUp(brightness);
             case "down" -> findCharRoundingDown(brightness);
@@ -92,7 +97,10 @@ public class SubImgCharMatcher {
 
         return closestChar;
     }
-
+    /**
+     * Adds a character to the character set.
+     * @param ch
+     */
     public void addChar(char ch) {
         if (!charSet.contains(ch)) {
             charSet.add(ch);
@@ -101,10 +109,18 @@ public class SubImgCharMatcher {
         }
     }
 
+    /**
+     * Returns the size of the character set.
+     * @return charSet.size()
+     */
     public int getCharsetSize(){
         return charSet.size();
     }
 
+    /**
+     * Remove char from the character set.
+     * @param ch - the char to removed.
+     */
     public void removeChar(char ch) {
         if (charSet.contains(ch)) {
             charSet.remove(ch);
@@ -113,10 +129,6 @@ public class SubImgCharMatcher {
             updateNorm();
         }
     }
-
-
-
-
 
     private void brightnessVal(char ch) {
         if (!this.rawVal.containsKey(ch)) {
@@ -149,7 +161,9 @@ public class SubImgCharMatcher {
     }
 
 
-
+    /**
+     * Prints the character set.
+     */
     public void printCharSet() {
         if (charSet.isEmpty()){
             return;
@@ -160,10 +174,16 @@ public class SubImgCharMatcher {
         System.out.println();
     }
 
+    /**
+     * Clears the character set.
+     */
     public void clear() {
         charSet.clear();
     }
-
+    /**
+     * Sets the rounding method to be used when determining the closest character.
+     * @param method
+     */
     public void setRoundingMethod(String method) {
         if (method.equals("up") || method.equals("down") || method.equals("abs")) {
             this.roundingMethod = method;
