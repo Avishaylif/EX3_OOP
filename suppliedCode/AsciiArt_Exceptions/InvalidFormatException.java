@@ -1,14 +1,14 @@
 package AsciiArt_Exceptions;
 
 /**
- * An exception class that is thrown when the resolution is invalid.
+ * An exception class that is thrown when the command format is invalid.
  */
-public class InvalidResolutionException extends Exception {
+public class InvalidFormatException extends Exception {
     /**
      * Constructor. Calls the super constructor.
      * @param message: The message to be printed.
      */
-    public InvalidResolutionException(String message) {
+    public InvalidFormatException(String message) {
         super(message);
     }
 }

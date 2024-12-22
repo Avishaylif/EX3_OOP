@@ -7,6 +7,7 @@ import java.awt.*;
 
 public class ProcessingImage {
     public static final int MINIMUM_RESOLUTION = 1;
+
     private Image image;
     private Image[][] partImage;
     private double[][] cachedBrightness;

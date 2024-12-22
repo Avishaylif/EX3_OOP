@@ -20,7 +20,6 @@ public class Shell {
     private static final String RUN_ASCIIART_COMMAND = "asciiArt";
 
     //default values
-    private static final int defaultResolution = 2; //TODO: put it inside the processingImage class
     private static final String defaultRoondingMethod = "";
     private static final String defaultOutput = "";
     public static final char[] DEFAULT_CHARS_SET = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
@@ -32,9 +31,15 @@ public class Shell {
     public static final String FONT_NAME = "Courier New";
     public static final String ADD_ERROR_MESSAGE = "Did not add due to incorrect format.";
     public static final String REMOVE_ERROR_MESSAGE = "Did not remove due to incorrect format.";
-    public static final String RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE = "Did not change resolution due to incorrect format.";
-    public static final String RESOLUTION_BOUNDRIES_ERROR_MESSAGE = "Did not change resolution due to exceeding boundaries.";
+    public static final String RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE = "Did not change resolution due" +
+            " to incorrect format.";
+    public static final String RESOLUTION_BOUNDRIES_ERROR_MESSAGE = "Did not change resolution due" +
+            " to exceeding boundaries.";
     public static final String CHARSET_SIZE_ERROR_MESSAGE = "Did not execute. Charset is too small.";
+    public static final String INVALID_ROUNDING_FORMAT_MESSAGE = "Did not change rounding method due to incorrect format.";
+    public static final String INVALID_FORMAT_OUTPUT_MESSAGE = "Did not change output method due to incorrect format.";
+    public static final String INVALID_COMMAND_MESSAGE = "Did not execute due to incorrect command.";
+
 
     private ProcessingImage processingImage;
     private SubImgCharMatcher subImgCharMatcher;
@@ -61,7 +66,6 @@ public class Shell {
      */
     public Shell(String imageName) {
         char[] charsSet = DEFAULT_CHARS_SET;
-        //TODO: CHANGE IT
         Image image;
         try {
             image = new Image(imageName);
@@ -87,7 +91,7 @@ public class Shell {
             try {
                 notExitCommand = commandsFactory(command, parts);
             }
-            catch (IOException | CharsetIsEmptyException | InvalidResolutionException e){
+            catch (IOException | CharsetIsEmptyException | InvalidFormatException e){
                 System.out.println(e.getMessage());
             }
         }
@@ -101,9 +105,9 @@ public class Shell {
      * @return False if the command is "exit", true otherwise.
      * @throws IOException               If an I/O error occurs.
      * @throws CharsetIsEmptyException   If the character set is empty when required.
-     * @throws InvalidResolutionException If the resolution is invalid.
+     * @throws InvalidFormatException If the resolution is invalid.\\todo:update or change
      */
-    private boolean commandsFactory(String command, String[] parts) throws IOException,InvalidResolutionException,
+    private boolean commandsFactory(String command, String[] parts) throws IOException, InvalidFormatException,
             CharsetIsEmptyException{
         try {
             switch (command) {
@@ -130,10 +134,12 @@ public class Shell {
                 case RUN_ASCIIART_COMMAND:
                     runAsciiArt();
                     break;
+                default:
+                    System.out.println(INVALID_COMMAND_MESSAGE);
             }
         }
-        catch(InvalidResolutionException e){
-            throw new InvalidResolutionException(e.getMessage());
+        catch(InvalidFormatException e){
+            throw new InvalidFormatException(e.getMessage());
             }
         catch (CharsetIsEmptyException e){
             throw new CharsetIsEmptyException(e.getMessage());
@@ -148,34 +154,35 @@ public class Shell {
      * Switches the output method for the ASCII art.
      *
      * @param parts The command and its arguments. Expected values: "console" or "html".
+     * @throws InvalidFormatException if the output is not "html" or "console".
      */
-    private void switchOutput(String[] parts) {
+    private void switchOutput(String[] parts) throws InvalidFormatException{
         if (parts.length > 1) {
             String method = parts[1];
             if (method.equals("console") || method.equals("html")) {
                 this.outputMethod = method;
-                System.out.println(OUTPUT_MESSAGE + method + ".");//delete it
                 return;
             }
         }
-        System.out.println("Did not change output method due to incorrect format.");
+        throw new InvalidFormatException(INVALID_FORMAT_OUTPUT_MESSAGE);
 
     }
     /**
      * Changes the rounding method used for matching brightness to characters.
      *
      * @param parts The command and its arguments. Expected values: "up", "down", or "abs".
+     * @throws InvalidFormatException if rounding format is incorrect
      */
-    private void changeRoundingMethod(String[] parts) {
+    private void changeRoundingMethod(String[] parts) throws InvalidFormatException{
         if (parts.length < 2) {
-            System.out.println("Did not change rounding method due to incorrect format.");
-            return;
+            throw new InvalidFormatException(INVALID_ROUNDING_FORMAT_MESSAGE);
+
         }
         String method = parts[1];
         try {
             subImgCharMatcher.setRoundingMethod(method);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Did not change rounding method due to incorrect format.");
+        } catch (IllegalArgumentException e) {//TODO: check it uot
+            throw new InvalidFormatException(INVALID_ROUNDING_FORMAT_MESSAGE);
         }
     }
 
@@ -322,9 +329,9 @@ public class Shell {
      * Adjusts the resolution for generating ASCII art.
      *
      * @param parts The command and its arguments. Expected values: "up" or "down".
-     * @throws InvalidResolutionException If the resolution is out of valid bounds.
+     * @throws InvalidFormatException If the resolution is out of valid bounds.
      */
-    private void adjustResolution(String[] parts) throws InvalidResolutionException{
+    private void adjustResolution(String[] parts) throws InvalidFormatException {
         try {
             if (parts.length > 1) {
                 String direction = parts[1];
@@ -333,12 +340,12 @@ public class Shell {
                 } else if (direction.equals("down")) {
                     processingImage.setResolution(processingImage.getResolution() / 2);
                 } else {
-                    throw new InvalidResolutionException(RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE);
+                    throw new InvalidFormatException(RESOLUTION_COMMAND_FORMAT_ERROR_MESSAGE);
                 }
             }
             System.out.println(RESOLUTION_SET_MESSAGE + processingImage.getResolution() + ".");
         } catch (IllegalArgumentException e) {
-            throw new InvalidResolutionException(RESOLUTION_BOUNDRIES_ERROR_MESSAGE);
+            throw new InvalidFormatException(RESOLUTION_BOUNDRIES_ERROR_MESSAGE);
         }
     }
     /**
